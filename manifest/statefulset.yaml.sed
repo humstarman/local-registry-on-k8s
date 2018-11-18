@@ -6,7 +6,7 @@ metadata:
 spec:
   serviceName: "{{.name}}"
   podManagementPolicy: Parallel
-  replicas: 3
+  replicas: 1
   template:
     metadata:
       labels:
@@ -15,12 +15,9 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: {{.name}}
-          image: {{.image}}:{{.tag}}
+          image: {{.image}}
+          imagePullPolicy: {{.image.pull.policy}}
           env:
-            - name: ENV_1 
-              value: "1"
-            - name: ENV_2
-              value: "2"
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -29,31 +26,19 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: CONFIG 
-              valueFrom:
-                configMapKeyRef:
-                  name: {{.configmap.name}}
-                  key: {{.configmap.key}} 
           ports:
-            - containerPort: {{.port.1}}
-            - containerPort: {{.port.2}}
+            - containerPort: {{.port}} 
+              name: http
           volumeMounts:
             - name: host-time
               mountPath: /etc/localtime
               readOnly: true
-            - name: {{.claim}}
+            - name: {{.pv.name}}
               mountPath: {{.mount.path}}
-            - name: {{.config.name}} 
-              mountPath: {{.mount.path}}
-              readOnly: true
-              #subPath: {{.config.file}}
       volumes:
         - name: host-time
           hostPath:
             path: /etc/localtime
-        - name: {{.claim}}
+        - name: {{.pv.name}}
           persistentVolumeClaim:
-            claimName: {{.claim.name}}
-        - name: {{.config.name}} 
-          configMap:
-            name: {{.configmap.name}}
+            claimName: {{.pv.name}}

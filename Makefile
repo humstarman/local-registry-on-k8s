@@ -1,32 +1,43 @@
 NAME=registry
+NAMESPACE=default
+PV_NAME=${NAME}-pv
+IMAGE=registry:latest
 PORT=5000
 CLUSTER_IP=10.254.0.51
 LOCAL_REGISTRY=${CLUSTER_IP}:${PORT}
 MANIFEST=./manifest
+MOUNT_PATH=/var/lib/registry
+IMAGE_PULL_POLICY=Always
 
 all: deploy
 
 cp:
-	@find ${MANIFEST}s -type f -name "*.sed" | sed s?".sed"?""?g | xargs -I {} cp {}.sed {}
+	@find ${MANIFEST} -type f -name "*.sed" | sed s?".sed"?""?g | xargs -I {} cp {}.sed {}
 
 sed:
-	@find ${MANIFEST}s -type f -name "*.yaml" | xargs sed -i s?"{{.name}}"?"${NAME}"?g
-	@find ${MANIFEST}s -type f -name "*.yaml" | xargs sed -i s?"{{.namespace}}"?"${NAMESPACE}"?g
-	@find ${MANIFEST}s -type f -name "*.yaml" | xargs sed -i s?"{{.port}}"?"${PORT}"?g
-	@find ${MANIFEST}s -type f -name "*.yaml" | xargs sed -i s?"{{.image}}"?"${IMAGE}"?g
-	@find ${MANIFEST}s -type f -name "*.yaml" | xargs sed -i s?"{{.image.pull.policy}}"?"${IMAGE_PULL_POLICY}"?g
+	@find ${MANIFEST} -type f -name "*.yaml" | xargs sed -i s?"{{.name}}"?"${NAME}"?g
+	@find ${MANIFEST} -type f -name "*.yaml" | xargs sed -i s?"{{.pv.name}}"?"${PV_NAME}"?g
+	@find ${MANIFEST} -type f -name "*.yaml" | xargs sed -i s?"{{.namespace}}"?"${NAMESPACE}"?g
+	@find ${MANIFEST} -type f -name "*.yaml" | xargs sed -i s?"{{.port}}"?"${PORT}"?g
+	@find ${MANIFEST} -type f -name "*.yaml" | xargs sed -i s?"{{.mount.path}}"?"${MOUNT_PATH}"?g
+	@find ${MANIFEST} -type f -name "*.yaml" | xargs sed -i s?"{{.cluster.ip}}"?"${CLUSTER_IP}"?g
+	@find ${MANIFEST} -type f -name "*.yaml" | xargs sed -i s?"{{.image}}"?"${IMAGE}"?g
+	@find ${MANIFEST} -type f -name "*.yaml" | xargs sed -i s?"{{.image.pull.policy}}"?"${IMAGE_PULL_POLICY}"?g
 
 deploy: export OP=create
 deploy: cp sed
+	@kubectl ${OP} -f ${MANIFEST}/statefulset.yaml
 	@kubectl ${OP} -f ${MANIFEST}/service.yaml
-	@kubectl ${OP} -f ${MANIFEST}/endpoint.yaml
+	@kubectl ${OP} -f ${MANIFEST}/pvc.yaml
 
 del: export OP=delete
 del:
+	@kubectl ${OP} -f ${MANIFEST}/statefulset.yaml
 	@kubectl ${OP} -f ${MANIFEST}/service.yaml
-	@kubectl ${OP} -f ${MANIFEST}/endpoint.yaml
+	@kubectl ${OP} -f ${MANIFEST}/pvc.yaml
+	@rm -f ${MANIFEST}/statefulset.yaml
 	@rm -f ${MANIFEST}/service.yaml
-	@rm -f ${MANIFEST}/endpoint.yaml
+	@rm -f ${MANIFEST}/pvc.yaml
 
 clean: del
 

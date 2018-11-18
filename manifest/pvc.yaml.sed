@@ -1,15 +1,13 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: {{.name}} 
+  name: {{.pv.name}} 
   namespace: {{.namespace}}
   annotations:
     volume.beta.kubernetes.io/storage-class: "slow"
-    #volume.beta.kubernetes.io/storage-class: "{{.storageclass.name}}"
 spec:
   accessModes:
-    - ReadWriteOnce
-    #- ReadWriteMany
+    - ReadWriteMany
   resources:
     requests:
-      storage: {{.n}}Gi
+      storage: 100Gi
